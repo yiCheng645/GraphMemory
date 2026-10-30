@@ -67,7 +67,7 @@
       "user_agent": "MemoryR2/1.0"
     }
   },
-  "revision": "r2-concurrent-recovery-20261030",
+  "revision": "r2-indexed-citations-20261030",
   "request_seconds": 1740,
   "user_policy": {
     "mode": "dynamic",

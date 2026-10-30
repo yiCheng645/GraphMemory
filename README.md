@@ -1,6 +1,6 @@
 # GraphMemory：精简参赛候选
 
-本目录提供原在线v2-r2文本记忆服务的精简源码。候选revision为`r2-concurrent-recovery-20261030`，route为`direct-graph-v2-online-add-r2`，检索策略仍为`direct-graph-v2-role-entry-r2`。默认端口8005。
+本目录提供原在线v2-r2文本记忆服务的精简源码。候选revision为`r2-indexed-citations-20261030`，route为`direct-graph-v2-online-add-r2`，检索策略仍为`direct-graph-v2-role-entry-r2`。默认端口8005。
 
 本次整理将运行所需的共享函数从历史实验脚本中分离，没有修改R2检索、模型提示词、身份与来源校验、Add成功/失败处理或有限重试规则。新revision用于清楚区分构建和代码绑定；不能静默覆盖旧实例或将未部署的候选称为线上版本。
 
@@ -53,9 +53,9 @@ Search先做BM25/向量RRF检索并保留100个原始候选。R2按消息合并�
 
 ## 文件布局
 
-35个运行模块保留存储、图处理、R2检索与恢复/费用控制。共享函数集中在`evidence_packing.py`、`graph_source.py`、`graph_types.py`、`graph_validation.py`、`graph_query_support.py`。不再依赖历史`evaluate_*`、`compare_*`、离线答案生成、评分与实验调度脚本。
+36个运行模块保留存储、图处理、R2检索与恢复/费用控制。共享函数集中在`evidence_packing.py`、`graph_source.py`、`graph_types.py`、`graph_validation.py`、`graph_query_support.py`。不再依赖历史`evaluate_*`、`compare_*`、离线答案生成、评分与实验调度脚本。
 
-其余文件只提供入口配置、依赖清单、词表准备、源码校验、许可和说明。源码冻结清单见`versions/r2-concurrent-recovery-20261030/manifest.json`。依赖包由pip获取，其信息见`THIRD_PARTY_NOTICES.md`；项目原MIT许可证保留。
+其余文件只提供入口配置、依赖清单、词表准备、源码校验、许可和说明。源码冻结清单见`versions/r2-indexed-citations-20261030/manifest.json`。依赖包由pip获取，其信息见`THIRD_PARTY_NOTICES.md`；项目原MIT许可证保留。
 
 ## 验证与限制
 
@@ -80,3 +80,10 @@ Search先做BM25/向量RRF检索并保留100个原始候选。R2按消息合并�
 身份判断仍执行原引用、来源、类别和scope校验；只在初次有效JSON输出违反身份校验且原生尝试有余额时，允许一次带错误反馈的模型纠正。纠正与网络失败重试共用原尝试额度，生产图模型每项总计最多2次。失败输出、纠正请求和回执单独持久化，重启和平台重试不重置次数。纠正后仍不合规则Add报错并保留未完成步骤，不自动降级、删除失败项或绕过原校验；修复并不保证模型一定给出有效结果。
 
 平台任务失败不会自动取消已经接收的HTTP请求；在平台缺少取消通知时，本地仍按请求总期限及费用上限完成或保留其写入。
+
+
+## 来源片段编号协议
+
+当前身份判断输出decision、简短reason和citation_ids。程序将两个目标原文按512字符顺序无损切成C1/R1等片段，原上下文仍提供给模型；模型只选择已有片段编号，程序从绑定原文读取逐字片段及真实message_id，再执行原身份校验。未知编号、缺少双方来源、类别或scope不符仍拒绝。选择有效编号只保证来源绑定，不代表语义判断正确。
+
+截断或格式错误输出也进入一次有限纠正，与网络重试合计受原图模型2次尝试上限约束；拒绝响应、模型漂移、鉴权/额度错误不因此重生成。旧失败回执保留，重启不刷新尝试次数。此协议有独立版本和请求身份，不复用旧自由文本引用输出来冒充新协议结果。没有根据官方题号、答案或评分定制逻辑。
