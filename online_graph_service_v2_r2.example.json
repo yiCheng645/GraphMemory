@@ -1,0 +1,76 @@
+{
+  "route": "direct-graph-v2-online-add-r2",
+  "retrieval_policy": "direct-graph-v2-role-entry-r2",
+  "mode": "disabled",
+  "data_root": "data/live/online_graph_v3/role_entry_v2_r2/query_timeout_20261030/bounded_reconnect_20261030/deploy/c/example",
+  "users": [],
+  "providers": {
+    "chat": {
+      "endpoint": "https://example.invalid/v1/chat/completions",
+      "api_key_env": "ONLINE_GRAPH_API_KEY",
+      "model": "gpt-4o-mini-2024-07-18",
+      "max_output_tokens": 1600,
+      "max_input_bytes": 64000,
+      "budget": {
+        "currency": "USD",
+        "max_requests": 100,
+        "max_estimated_cost": 1,
+        "input_per_million": 0.15,
+        "output_per_million": 0.6
+      },
+      "timeout_seconds": 30,
+      "max_model_attempts": 3,
+      "retry_backoff_seconds": [
+        1,
+        3
+      ],
+      "retry_max_wait_seconds": 60,
+      "user_agent": "MemoryR2/1.0"
+    },
+    "embedding": {
+      "endpoint": "https://YOUR-WORKSPACE.maas.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding",
+      "api_key_env": "DASHSCOPE_API_KEY",
+      "dimension": 1024,
+      "budget": {
+        "currency": "CNY",
+        "max_requests": 100,
+        "max_estimated_cost": 0.5,
+        "input_per_million": 0.5,
+        "output_per_million": 0.5
+      },
+      "timeout_seconds": 30,
+      "max_model_attempts": 3,
+      "retry_backoff_seconds": [
+        1,
+        3
+      ],
+      "retry_max_wait_seconds": 60,
+      "user_agent": "MemoryR2/1.0"
+    },
+    "reranker": {
+      "endpoint": "https://YOUR-WORKSPACE.maas.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank",
+      "api_key_env": "DASHSCOPE_API_KEY",
+      "budget": {
+        "currency": "CNY",
+        "max_requests": 100,
+        "max_estimated_cost": 0.5,
+        "input_per_million": 0.5,
+        "output_per_million": 0.5
+      },
+      "timeout_seconds": 30,
+      "max_model_attempts": 3,
+      "retry_backoff_seconds": [
+        1,
+        3
+      ],
+      "retry_max_wait_seconds": 60,
+      "user_agent": "MemoryR2/1.0"
+    }
+  },
+  "revision": "r2-clean-release-20261030",
+  "request_seconds": 1740,
+  "user_policy": {
+    "mode": "dynamic",
+    "max_users": 100000
+  }
+}

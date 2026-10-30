@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# GraphMemory private runtime artifacts
+/data/
+/checks/
+.env
+.env.*
+!.env.example
+/deployment/*integration*.json
+/deployment/*connectivity*.json
+/deployment/online_graph_r2.live.json
+/deployment/ngrok.local-status.json
