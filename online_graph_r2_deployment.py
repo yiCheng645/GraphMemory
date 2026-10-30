@@ -101,10 +101,9 @@ class OnlineRouter(ReconnectRouter):
         except UnicodeEncodeError:
             raise ApiError(422, "user_id contains invalid Unicode") from None
         deadline = REQUEST_DEADLINE.get()
-        wait = min(1., max(0., deadline - time.monotonic())) if deadline else 1.
+        wait = max(0., deadline - time.monotonic()) if deadline else self.request_seconds
         if not self.registry_lock.acquire(timeout=wait):
-            check_deadline()
-            raise ApiError(429, "online R2 user registration is busy")
+            raise ApiError(503, "online R2 user registration queue time budget exhausted")
         try:
             check_deadline()
             if self.user_policy["mode"] == "allowlist" and uid not in self.allowed_users:
@@ -132,9 +131,8 @@ class OnlineRouter(ReconnectRouter):
             return super()._call(body, operation)
         store = self.engine._route(body)
         check_deadline()
-        if not store.lock.acquire(timeout=min(1., max(0., existing - time.monotonic()))):
-            check_deadline()
-            raise ApiError(429, "another operation for this online R2 user is active")
+        if not store.lock.acquire(timeout=max(0., existing - time.monotonic())):
+            raise ApiError(503, "online R2 user queue time budget exhausted")
         try:
             check_deadline()
             result = operation(body)

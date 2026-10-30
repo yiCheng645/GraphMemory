@@ -22,6 +22,9 @@ def encoder():
 
 def create_server(router, api_key, port=8005):
     server = make_server(router, port=port, api_key=api_key)
+    # Accept the advertised concurrent burst; model dispatch remains capped at 16.
+    server.request_queue_size = 64
+    server.socket.listen(server.request_queue_size)
     original = server.RequestHandlerClass
 
     class Handler(original):

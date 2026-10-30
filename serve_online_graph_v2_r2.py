@@ -4,7 +4,8 @@ import argparse,json,os
 from entity_identity_v1 import ROOT,digest
 from online_graph_r2_http_client import OnlineRouter,safe_root,VERSION,RETRIEVAL_POLICY,REVISION,user_settings
 from online_graph_r2_http_provider import (DeclaredUserAgentProvider as OnlineProvider, validate_user_agent)
-from online_graph_r2_retry_provider import ReconnectJournal as BoundedCallJournal, retry_policy
+from online_graph_r2_retry_provider import retry_policy
+from online_graph_r2_concurrent_journal import ConcurrentCallJournal as BoundedCallJournal
 from online_graph_providers_v3 import CallJournal,JsonProvider,LiveExtraction,live_judge,BudgetedEmbedding,BudgetedReranker
 from online_graph_r2_runtime import create_server,encoder
 from online_graph_r2_runtime import load_env

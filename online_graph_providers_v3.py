@@ -147,8 +147,12 @@ class LiveExtraction:
 
 
 def live_judge(provider, user_id):
-    from identity_quote_whitespace import SourceWhitespaceModelJudge
-    return SourceWhitespaceModelJudge(provider, user_id)
+    if not hasattr(provider, 'reconnect'):
+        # Legacy/offline adapters have no durable retry allowance to consume.
+        from identity_quote_whitespace import SourceWhitespaceModelJudge
+        return SourceWhitespaceModelJudge(provider, user_id)
+    from online_graph_r2_identity_retry import BoundedIdentityJudge
+    return BoundedIdentityJudge(provider, user_id)
 
 
 class BudgetedEmbedding:

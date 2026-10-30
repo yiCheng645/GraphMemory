@@ -58,9 +58,9 @@ class OnlineRouter:
             remaining = REQUEST_DEADLINE.get() - time.monotonic()
             if remaining <= 0:
                 check_deadline()
-            acquired = store.lock.acquire(timeout=min(1., remaining))
+            acquired = store.lock.acquire(timeout=remaining)
             if not acquired:
-                raise ApiError(429, "another operation for this online R2 user is active")
+                raise ApiError(503, "online R2 user queue time budget exhausted")
             check_deadline()
             result = operation(body)
             check_deadline()

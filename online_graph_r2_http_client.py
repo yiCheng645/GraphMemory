@@ -3,7 +3,7 @@ from pathlib import Path
 from entity_identity_v1 import ROOT,digest,sha
 from online_graph_r2_deployment import OnlineRouter as DeployedRouter,LIVE_ROOT as DEPLOY_ROOT
 from online_graph_r2_deployment import VERSION,RETRIEVAL_POLICY,user_settings
-REVISION="r2-whitespace-recovery-20261030"
+REVISION="r2-concurrent-recovery-20261030"
 LIVE_ROOT=DEPLOY_ROOT/"c"
 
 def safe_root(path):
@@ -14,7 +14,7 @@ def safe_root(path):
 
 class OnlineRouter(DeployedRouter):
     def __init__(self,root,user_ids,factories,encoder,*,policy_id,**kwargs):
-        binding=digest([REVISION,policy_id,{n:sha(ROOT/n) for n in ("online_graph_r2_http_client.py","online_graph_r2_http_provider.py","evidence_packing.py","graph_validation.py","graph_query_support.py","graph_source.py","graph_types.py","identity_quote_whitespace.py")}])
+        binding=digest([REVISION,policy_id,{n:sha(ROOT/n) for n in ("online_graph_r2_http_client.py","online_graph_r2_http_provider.py","evidence_packing.py","graph_validation.py","graph_query_support.py","graph_source.py","graph_types.py","identity_quote_whitespace.py","online_graph_r2_concurrent_journal.py","online_graph_r2_identity_retry.py")}])
         super().__init__(safe_root(root),user_ids,factories,encoder,policy_id=binding,**kwargs)
     def add(self,body):
         return {**super().add(body),"revision":REVISION}
