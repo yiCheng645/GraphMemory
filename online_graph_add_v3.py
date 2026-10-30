@@ -67,6 +67,11 @@ class OnlineIdentityGraph(IdentityGraph):
         self.judge = judge if judge is not None else CatalogJudge()
 
 
+    def lookup(self, db, mention):
+        from category_candidate_lookup import compatible_lookup
+        return compatible_lookup(db, mention)
+
+
 class OnlinePipeline(GraphIngestPipeline):
     def __init__(self, path, judge):
         self.graph = OnlineIdentityGraph(path, judge)

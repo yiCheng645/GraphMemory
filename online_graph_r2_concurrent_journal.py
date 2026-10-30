@@ -39,7 +39,7 @@ class ConcurrentCallJournal(ReconnectJournal):
                             n = len(body['input']['documents'])
                             input_bound += max(n - 1, 0) * len(body['input']['query'].encode('utf-8')) + n * 128
                         reserve = (input_bound * policy['input_per_million'] + output_tokens * policy['output_per_million']) / 1_000_000
-                        if count >= policy['max_requests'] or held + reserve > policy['max_estimated_cost']:
+                        if count >= policy['max_requests'] or (policy['max_estimated_cost'] is not None and held + reserve > policy['max_estimated_cost']):
                             raise ApiError(503, 'cumulative provider request or estimated cost cap reached')
                         check_until(until)
                         db.execute('insert into calls values(?,?,?,?,?,?,?,?,?,?,?)',

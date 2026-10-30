@@ -14,7 +14,7 @@
       "budget": {
         "currency": "USD",
         "max_requests": 100,
-        "max_estimated_cost": 1,
+        "max_estimated_cost": null,
         "input_per_million": 0.15,
         "output_per_million": 0.6
       },
@@ -34,7 +34,7 @@
       "budget": {
         "currency": "CNY",
         "max_requests": 100,
-        "max_estimated_cost": 0.5,
+        "max_estimated_cost": null,
         "input_per_million": 0.5,
         "output_per_million": 0.5
       },
@@ -53,7 +53,7 @@
       "budget": {
         "currency": "CNY",
         "max_requests": 100,
-        "max_estimated_cost": 0.5,
+        "max_estimated_cost": null,
         "input_per_million": 0.5,
         "output_per_million": 0.5
       },
@@ -67,7 +67,7 @@
       "user_agent": "MemoryR2/1.0"
     }
   },
-  "revision": "r2-indexed-citations-20261030",
+  "revision": "r2-category-unlimited-20261030",
   "request_seconds": 1740,
   "user_policy": {
     "mode": "dynamic",
