@@ -147,7 +147,8 @@ class LiveExtraction:
 
 
 def live_judge(provider, user_id):
-    return ModelCallbackJudge(lambda body: provider.chat(user_id, 'identity', body))
+    from identity_quote_whitespace import SourceWhitespaceModelJudge
+    return SourceWhitespaceModelJudge(provider, user_id)
 
 
 class BudgetedEmbedding:

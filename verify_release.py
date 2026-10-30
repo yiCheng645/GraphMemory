@@ -5,7 +5,7 @@ import argparse,hashlib,json
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--runtime',action='store_true');args=parser.parse_args()
     root=Path(__file__).resolve().parent
-    manifest=json.loads((root/'versions/r2-clean-release-20261030/manifest.json').read_text())
+    manifest=json.loads((root/'versions/r2-whitespace-recovery-20261030/manifest.json').read_text())
     for name,expected in manifest['files_sha256'].items():
         path=(root/name).resolve()
         if not path.is_relative_to(root) or hashlib.sha256(path.read_bytes()).hexdigest()!=expected:

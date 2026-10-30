@@ -1,6 +1,6 @@
 # GraphMemory：精简参赛候选
 
-本目录提供原在线v2-r2文本记忆服务的精简源码。候选revision为`r2-clean-release-20261030`，route为`direct-graph-v2-online-add-r2`，检索策略仍为`direct-graph-v2-role-entry-r2`。默认端口8005。
+本目录提供原在线v2-r2文本记忆服务的精简源码。候选revision为`r2-whitespace-recovery-20261030`，route为`direct-graph-v2-online-add-r2`，检索策略仍为`direct-graph-v2-role-entry-r2`。默认端口8005。
 
 本次整理将运行所需的共享函数从历史实验脚本中分离，没有修改R2检索、模型提示词、身份与来源校验、Add成功/失败处理或有限重试规则。新revision用于清楚区分构建和代码绑定；不能静默覆盖旧实例或将未部署的候选称为线上版本。
 
@@ -53,9 +53,9 @@ Search先做BM25/向量RRF检索并保留100个原始候选。R2按消息合并�
 
 ## 文件布局
 
-32个运行模块保留存储、图处理、R2检索与恢复/费用控制。共享函数集中在`evidence_packing.py`、`graph_source.py`、`graph_types.py`、`graph_validation.py`、`graph_query_support.py`。不再依赖历史`evaluate_*`、`compare_*`、离线答案生成、评分与实验调度脚本。
+33个运行模块保留存储、图处理、R2检索与恢复/费用控制。共享函数集中在`evidence_packing.py`、`graph_source.py`、`graph_types.py`、`graph_validation.py`、`graph_query_support.py`。不再依赖历史`evaluate_*`、`compare_*`、离线答案生成、评分与实验调度脚本。
 
-其余文件只提供入口配置、依赖清单、词表准备、源码校验、许可和说明。源码冻结清单见`versions/r2-clean-release-20261030/manifest.json`。依赖包由pip获取，其信息见`THIRD_PARTY_NOTICES.md`；项目原MIT许可证保留。
+其余文件只提供入口配置、依赖清单、词表准备、源码校验、许可和说明。源码冻结清单见`versions/r2-whitespace-recovery-20261030/manifest.json`。依赖包由pip获取，其信息见`THIRD_PARTY_NOTICES.md`；项目原MIT许可证保留。
 
 ## 验证与限制
 
@@ -66,3 +66,8 @@ Search先做BM25/向量RRF检索并保留100个原始候选。R2按消息合并�
 原实现的长query排序存在Python哈希顺序引起的近似同分顺序差异。本次对照固定同一哈希种子；历史回执只在其完整请求体和有序候选池完全相同的情况下复放，没有借用不同池的旧分数，也没有改变原排序规则。
 
 以上验证仅针对源码、免费契约和只读回执对照，没有据此运行官方Smoke或Full。是否已部署或发布，以对应部署/发布记录为准。正式申报前必须先部署并锁定实际源码/配置，再填写对应公开commit；不能用旧服务冒充新构建。
+
+
+## 身份引用空白格式恢复
+
+在执行原身份判断校验前，对模型引用中仅空白格式不同的情况，按同一message_id在绑定原文中查找唯一片段，并恢复该片段原始字符。大小写、词语、标点均不改；找不到或有多个匹配时不恢复，继续由原校验器拒绝。决策、理由、来源ID、原模型请求和原生回执均保留；不将无效same降级成自动合并，也不自动重新生成。恢复的字符区间和原引文hash记录在图判断的审计字段中。新revision区分此格式处理修复。
