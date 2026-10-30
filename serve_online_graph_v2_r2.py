@@ -7,6 +7,7 @@ from online_graph_r2_http_provider import (DeclaredUserAgentProvider as OnlinePr
 from online_graph_r2_retry_provider import retry_policy
 from online_graph_r2_concurrent_journal import ConcurrentCallJournal as BoundedCallJournal
 from online_graph_providers_v3 import CallJournal,JsonProvider,LiveExtraction,live_judge,BudgetedEmbedding,BudgetedReranker
+from graph_model_degradation import BoundedGraphExtraction,BoundedGraphIdentity
 from online_graph_r2_runtime import create_server,encoder
 from online_graph_r2_runtime import load_env
 
@@ -61,7 +62,7 @@ def create_live_router(config,enc,*,strict_graph=False):
             for name,provider in config['providers'].items():
                 shared[name]=OnlineProvider(provider,journal,name,api_key=os.environ.get(provider['api_key_env'],''))
         return {'embedding':BudgetedEmbedding(shared['embedding'],uid),'reranker':BudgetedReranker(shared['reranker'],uid),
-                'extractor':LiveExtraction(shared['chat'],uid),'judge':live_judge(shared['chat'],uid)}
+                'extractor':BoundedGraphExtraction(shared['chat'],uid),'judge':BoundedGraphIdentity(shared['chat'],uid)}
     router=OnlineRouter(root,config['users'],factory,enc,policy_id=digest(config),
                         strict_graph=strict_graph,request_seconds=config['request_seconds'],user_policy=config['user_policy'])
     try:

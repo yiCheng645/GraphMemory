@@ -13,6 +13,7 @@ from graph_block_reference_v4 import build_bundle, validate_bundle
 from graph_ingest_pipeline_v28 import GraphIngestPipeline
 from resolved_graph_ingest_v28 import IdentityGraph, ResolvedGraph, CatalogJudge
 from role_graph_system_v2 import RoleGraphStore
+from graph_model_degradation import GraphModelExhausted,commit_degraded,recover_degraded
 
 VERSION = 'direct-graph-v3-online-add-v1'
 LIVE_ROOT = ROOT / 'data/live/online_graph_v3'
@@ -168,24 +169,31 @@ CREATE TABLE IF NOT EXISTS publications(generation INTEGER PRIMARY KEY,body TEXT
                     mid = digest([uid, request, index])
                     with closing(self.jobs()) as db:
                         job = db.execute('select * from messages where message_id=?', (mid,)).fetchone()
-                    if job['state'] in ('graph_committed', 'assistant_skipped'):
+                    if job['state'] in ('graph_committed', 'graph_degraded', 'assistant_skipped'):
                         continue
                     if message['role'] == 'assistant':
                         self._update_message(mid, state='assistant_skipped')
                         continue
                     bundle = build_bundle(self.path, uid, mid)
-                    if job['extraction']:
-                        if json.loads(job['bundle']) != bundle:
-                            raise ValueError('pending source bundle changed')
-                        extraction = json.loads(job['extraction'])
-                    else:
-                        extraction = self.extractor(deepcopy(bundle))
-                        # Persist successful raw output before normalization/identity.
-                        self._update_message(mid, state='extracted', bundle=encode(bundle), extraction=encode(extraction))
-                    self._fault('after_extraction')
-                    result = self.pipeline.add(bundle, extraction, {'route': VERSION, 'request_id': request})
-                    self._fault('after_graph_commit')
-                    self._update_message(mid, state='graph_committed', result=encode(result))
+                    if recover_degraded(self, job):
+                        continue
+                    try:
+                        if job['extraction']:
+                            if json.loads(job['bundle']) != bundle:
+                                raise ValueError('pending source bundle changed')
+                            extraction = json.loads(job['extraction'])
+                        else:
+                            extraction = self.extractor(deepcopy(bundle))
+                            # Persist successful raw output before normalization/identity.
+                            self._update_message(mid, state='extracted', bundle=encode(bundle), extraction=encode(extraction))
+                        self._fault('after_extraction')
+                        result = self.pipeline.add(bundle, extraction, {'route': VERSION, 'request_id': request})
+                        self._fault('after_graph_commit')
+                        self._update_message(mid, state='graph_committed', result=encode(result))
+                    except GraphModelExhausted as exc:
+                        with closing(self.jobs()) as db:
+                            saved = db.execute('select * from messages where message_id=?', (mid,)).fetchone()
+                        commit_degraded(self, bundle, saved, exc)
                 self._fault('before_publish')
                 publication = self._publish()
                 return self._complete_request(request, publication)
@@ -208,15 +216,17 @@ CREATE TABLE IF NOT EXISTS publications(generation INTEGER PRIMARY KEY,body TEXT
                     raise ValueError('graph coverage incomplete or source binding changed')
         with closing(self.jobs()) as db:
             partial = 0
-            for row in db.execute("select result from messages where state='graph_committed'"):
+            degraded = 0
+            for row in db.execute("select result from messages where state in ('graph_committed','graph_degraded')"):
                 result = json.loads(row[0])
                 origin = result.get('origin') or {}
-                partial += bool(result.get('source_rejected_candidates') or result.get('partial_overflow')
+                degraded += bool(origin.get('graph_degradation'))
+                partial += bool(origin.get('graph_degradation') or result.get('source_rejected_candidates') or result.get('partial_overflow')
                                 or origin.get('source_rejected_candidates') or origin.get('partial_overflow'))
             previous = db.execute('select max(generation) from publications').fetchone()[0] or 0
         publication = {'route': VERSION, 'user_id': self.user_id, 'generation': previous + 1,
                        'source_sha256': sha(self.path), 'graph_sha256': sha(self.graph_path),
-                       'user_messages': len(user_messages), 'partial_messages': partial}
+                       'user_messages': len(user_messages), 'partial_messages': partial, 'degraded_messages': degraded}
         # Keep a durable generation history before atomically advancing current binding.
         with closing(self.jobs()) as db, db:
             db.execute('insert into publications values(?,?)', (publication['generation'], encode(publication)))
@@ -228,7 +238,7 @@ CREATE TABLE IF NOT EXISTS publications(generation INTEGER PRIMARY KEY,body TEXT
             row = db.execute('select text_receipt from requests where request_id=?', (request,)).fetchone()
             receipt = {**json.loads(row[0]), 'text_status': 'written',
                        'graph_status': 'partial' if publication['partial_messages'] else 'indexed',
-                       'graph_version': publication['generation']}
+                       'graph_version': publication['generation'], 'graph_degraded_messages': publication.get('degraded_messages',0)}
             db.execute("update requests set state='complete',receipt=?,error=NULL,updated=? where request_id=?",
                        (encode(receipt), time.time(), request))
         return receipt
@@ -248,6 +258,8 @@ CREATE TABLE IF NOT EXISTS publications(generation INTEGER PRIMARY KEY,body TEXT
             for job in messages:
                 if job['role'] == 'assistant':
                     self._update_message(job['message_id'], state='assistant_skipped')
+                elif recover_degraded(self, job):
+                    continue
                 elif job['extraction']:
                     bundle = build_bundle(self.path, self.user_id, job['message_id'])
                     if json.loads(job['bundle']) != bundle:

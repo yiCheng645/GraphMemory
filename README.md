@@ -1,6 +1,6 @@
 # GraphMemory：精简参赛候选
 
-本目录提供原在线v2-r2文本记忆服务的精简源码。候选revision为`r2-category-unlimited-20261030`，route为`direct-graph-v2-online-add-r2`，检索策略仍为`direct-graph-v2-role-entry-r2`。默认端口8005。
+本目录提供原在线v2-r2文本记忆服务的精简源码。候选revision为`r2-graph-degrade-20261030`，route为`direct-graph-v2-online-add-r2`，检索策略仍为`direct-graph-v2-role-entry-r2`。默认端口8005。
 
 本次整理将运行所需的共享函数从历史实验脚本中分离，没有修改R2检索、模型提示词、身份与来源校验、Add成功/失败处理或有限重试规则。新revision用于清楚区分构建和代码绑定；不能静默覆盖旧实例或将未部署的候选称为线上版本。
 
@@ -53,9 +53,9 @@ Search先做BM25/向量RRF检索并保留100个原始候选。R2按消息合并�
 
 ## 文件布局
 
-37个运行模块保留存储、图处理、R2检索与恢复/费用控制。共享函数集中在`evidence_packing.py`、`graph_source.py`、`graph_types.py`、`graph_validation.py`、`graph_query_support.py`。不再依赖历史`evaluate_*`、`compare_*`、离线答案生成、评分与实验调度脚本。
+38个运行模块保留存储、图处理、R2检索与恢复/费用控制。共享函数集中在`evidence_packing.py`、`graph_source.py`、`graph_types.py`、`graph_validation.py`、`graph_query_support.py`。不再依赖历史`evaluate_*`、`compare_*`、离线答案生成、评分与实验调度脚本。
 
-其余文件只提供入口配置、依赖清单、词表准备、源码校验、许可和说明。源码冻结清单见`versions/r2-category-unlimited-20261030/manifest.json`。依赖包由pip获取，其信息见`THIRD_PARTY_NOTICES.md`；项目原MIT许可证保留。
+其余文件只提供入口配置、依赖清单、词表准备、源码校验、许可和说明。源码冻结清单见`versions/r2-graph-degrade-20261030/manifest.json`。依赖包由pip获取，其信息见`THIRD_PARTY_NOTICES.md`；项目原MIT许可证保留。
 
 ## 验证与限制
 
@@ -94,3 +94,12 @@ Search先做BM25/向量RRF检索并保留100个原始候选。R2按消息合并�
 身份比较前按原compatible规则（同类别，或任一类别unknown）过滤候选；在候选排名/数量截断之前过滤，保留原排序和8候选上限。作品和人物等不兼容候选不送入模型，不生成虚假的different/unknown判断；原身份校验器仍拒绝不合规same。
 
 用户授权取消金额拦截：budget.max_estimated_cost=null表示不按估算金额拒绝原生请求。仍记录所有成功、失败、未知请求和完整费用预留；累计调用次数、单项尝试次数、并发、超时和提供方鉴权/账单限制继续生效。null不是清零余额，也不是无限重试。有限数值仍按原金额上限拦截。
+
+
+## 图失败降级及累计次数取消
+
+用户授权取消累计原生调用次数限制：budget.max_requests=null；本地金额限制仍为null。历史次数、费用、原生输出和失败记录不清零。
+
+单项max_model_attempts仍可配置1至3次（生产图2、向量3、重排3），包含首次、网络重试和输出纠正。图抽取/身份判断用尽该项次数且仍失败时，将该消息记为graph_degraded：原文和向量必须已持久化，失败消息不插入图关系，之前成功消息的图保留。Add明确返回graph_status=partial与graph_degraded_messages，并可检索该消息原文。降级来源覆盖及原生调用ID持久化，重放/重启不会自动补图或重置尝试数。
+
+未到次数上限的鉴权、队列、容量错误，以及来源绑定、数据库和原文/向量写入失败仍报错；不把任意异常当作可降级模型错误。已有原文、类别和scope校验器不放宽；不伪造same/different/unknown判断。Search继续使用原R2策略，失败消息仅通过原文/向量参与检索。

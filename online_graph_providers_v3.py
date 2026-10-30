@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS calls(id TEXT PRIMARY KEY,provider TEXT,scope TEXT,ki
         if set(policy) != {'currency', 'max_requests', 'max_estimated_cost',
                            'input_per_million', 'output_per_million'}:
             raise ValueError('explicit cumulative request/cost/rate policy required')
-        if policy['currency'] not in ('USD', 'CNY') or type(policy['max_requests']) is not int or policy['max_requests'] <= 0:
+        if policy['currency'] not in ('USD', 'CNY') or (policy['max_requests'] is not None and (type(policy['max_requests']) is not int or policy['max_requests'] <= 0)):
             raise ValueError('positive cumulative request cap and currency required')
         if policy['max_estimated_cost'] is not None and (type(policy['max_estimated_cost']) not in (int,float) or not math.isfinite(policy['max_estimated_cost']) or policy['max_estimated_cost']<=0):
             raise ValueError('cost cap must be null or positive finite')
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS calls(id TEXT PRIMARY KEY,provider TEXT,scope TEXT,ki
                     n = len(body['input']['documents'])
                     input_bound += max(n - 1, 0) * len(body['input']['query'].encode('utf-8')) + n * 128
                 reserve = (input_bound * policy['input_per_million'] + output_tokens * policy['output_per_million']) / 1_000_000
-                if count >= policy['max_requests'] or (policy['max_estimated_cost'] is not None and held + reserve > policy['max_estimated_cost']):
+                if (policy['max_requests'] is not None and count >= policy['max_requests']) or (policy['max_estimated_cost'] is not None and held + reserve > policy['max_estimated_cost']):
                     raise ApiError(503, 'cumulative provider request or estimated cost cap reached')
                 with db:
                     db.execute('insert into calls values(?,?,?,?,?,?,?,?,?,?,?)',
