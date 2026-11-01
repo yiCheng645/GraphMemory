@@ -3,7 +3,7 @@ from pathlib import Path
 from entity_identity_v1 import ROOT,digest,sha
 from online_graph_r2_deployment import OnlineRouter as DeployedRouter,LIVE_ROOT as DEPLOY_ROOT
 from online_graph_r2_deployment import VERSION,RETRIEVAL_POLICY,user_settings
-REVISION="r2-graph-degrade-20261030"
+REVISION="r2-terminal-fallback-20261101"
 LIVE_ROOT=DEPLOY_ROOT/"c"
 
 def safe_root(path):

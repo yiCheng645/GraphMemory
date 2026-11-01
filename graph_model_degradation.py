@@ -1,7 +1,7 @@
 """Bounded graph model attempts and durable, explicit text-only degradation."""
 from contextlib import closing
 from copy import deepcopy
-import json
+import base64,hashlib,json
 
 from memory_service import ApiError,digest,encode
 from graph_block_reference_v4 import SYSTEM,RESPONSE_FORMAT,SCHEMA,model_input,validate_bundle
@@ -13,6 +13,43 @@ from resolved_graph_ingest_v28 import IdentityError
 
 class GraphModelExhausted(Exception):
     def __init__(self,detail):self.detail=detail;super().__init__('graph model attempts exhausted; text-only degradation')
+
+class GraphModelRejected(GraphModelExhausted):
+    def __init__(self,detail):
+        self.detail=detail
+        Exception.__init__(self,'graph provider declined content; text-only degradation without retry')
+
+def content_rejection(payload,expected_model):
+    if not isinstance(payload,dict):return None
+    if 'model' in payload and payload['model']!=expected_model:return None
+    error=payload.get('error')
+    if isinstance(error,dict) and error.get('code') in ('content_filter','content_policy_violation'):
+        return {'reason':'provider_content_rejection','upstream_error_code':error['code'],'retryable':False}
+    choices=payload.get('choices')
+    if isinstance(choices,list) and choices and isinstance(choices[0],dict):
+        choice=choices[0];message=choice.get('message')
+        if choice.get('finish_reason')=='content_filter' or (isinstance(message,dict) and message.get('refusal')):
+            return {'reason':'provider_content_rejection','upstream_error_code':'structured_refusal','retryable':False}
+    return None
+
+def saved_content_rejection(provider,calls):
+    with closing(provider.journal.connect()) as db:
+        for call in reversed(calls):
+            row=db.execute('select raw_response from calls where id=?',(call['call_id'],)).fetchone()
+            if not row or not row[0]:continue
+            envelope=json.loads(row[0]);raw=base64.b64decode(envelope['raw_b64'],validate=True)
+            if hashlib.sha256(raw).hexdigest()!=envelope['raw_sha256']:
+                raise ApiError(503,'saved provider receipt integrity failure')
+            try:payload=json.loads(raw)
+            except (ValueError,UnicodeError):continue
+            rejected=content_rejection(payload,provider.config['model'])
+            if rejected:return {**rejected,'upstream_http_status':envelope.get('http_status')}
+    return None
+
+def rejected_graph(kind,maximum,body,calls,rejection):
+    return GraphModelRejected({'stage':kind,'attempt_limit':maximum,'native_attempts':len(calls),
+        'last_error_type':'ProviderContentRejected','native_calls':calls,
+        'original_request_sha256':digest(body),**rejection})
 
 def reservations(provider,scope,kind,bodies):
     rows={}
@@ -41,9 +78,15 @@ def run_model(provider,scope,kind,body,validator):
                 native=p.post(scope,kind,request,request['max_tokens'])
             except ApiError as exc:
                 calls=reservations(provider,scope,kind,bodies)
-                if len(calls)<maximum:raise  # Auth, capacity, queue/deadline: no fake exhaustion.
+                rejection=saved_content_rejection(provider,calls)
+                if rejection:raise rejected_graph(kind,maximum,body,calls,rejection) from None
+                if len(calls)<maximum:raise  # Other auth/capacity/queue failures remain explicit.
                 raise GraphModelExhausted({'stage':kind,'attempt_limit':maximum,'native_attempts':len(calls),
                     'last_error_type':type(exc).__name__,'native_calls':calls,'original_request_sha256':digest(body)}) from None
+            rejection=content_rejection(native,provider.config['model'])
+            if rejection:
+                calls=reservations(provider,scope,kind,bodies)
+                raise rejected_graph(kind,maximum,body,calls,rejection)
             try:
                 result=validator(decode_output(native,provider.config['model']))
                 return result
@@ -86,7 +129,7 @@ class BoundedGraphIdentity:
 def commit_degraded(store,bundle,job,error):
     validate_bundle(bundle)
     store._update_message(job['message_id'],bundle=encode(bundle))
-    origin={'graph_degradation':{'policy':'graph-model-exhaustion-text-only-v1',**error.detail},
+    origin={'graph_degradation':{'policy':'graph-terminal-or-exhausted-text-only-v2',**error.detail},
             'raw_extraction_sha256':digest(json.loads(job['extraction'])) if job['extraction'] else None}
     result=store.pipeline.graph.ingest(bundle,[],origin)
     store._fault('after_graph_degradation_commit')

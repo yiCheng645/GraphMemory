@@ -1,6 +1,6 @@
 {
-  "revision": "r2-graph-degrade-20261030",
-  "parent_revision": "r2-category-unlimited-20261030",
+  "revision": "r2-terminal-fallback-20261101",
+  "parent_revision": "r2-graph-degrade-20261030",
   "route": "direct-graph-v2-online-add-r2",
   "retrieval_policy": "direct-graph-v2-role-entry-r2",
   "files_sha256": {
@@ -13,7 +13,7 @@
     "formatted_reranker.py": "8c6705f96b0591a38872663726f7f1e287df18eb696ef4d9db1b761a8293df3b",
     "graph_block_reference_v4.py": "be9c50d315b49da36e1f801522e9643a809ed1ce4ff274734a253c6796bacbb6",
     "graph_ingest_pipeline_v28.py": "bd782b700936cb7177a9e0d307e9f3b69074b7df27fcc3e7a428a90d3fde5e20",
-    "graph_model_degradation.py": "99f8c526857e7a2a8d5b66445eb4fb4c7ffd373f3c4756311b77aeffddb99356",
+    "graph_model_degradation.py": "b4347bdfac9b0b369e7be4a4f52ed52f50a9f2dafb5bbd60bae09d33b748a885",
     "graph_query_support.py": "e6310549c739a9249a172049fa16e647bf03d9d0aeb84a6635505420abc1e706",
     "graph_source.py": "511915eaeb4b619b722b4c8581738d37a9b8d1e24714e69f2dcf3dcf86e60b6e",
     "graph_types.py": "7e6a3ab306c461986fea12bf2732b9861f4e89975d255e9798f5bc1351dd5883",
@@ -30,7 +30,7 @@
     "online_graph_r2_deadline.py": "d4272839a522f9c71ad17bf8583eb9482c60279f90ab80195e83e7f0f574d743",
     "online_graph_r2_deployment.py": "8bb36035f0b9a7772797315018ea50162718c424740b05d4afedf35907f91b9a",
     "online_graph_r2_fixes.py": "d23d9d0914861240d7d2eeb7717626896b90dc602ce07f3214272e68b760160d",
-    "online_graph_r2_http_client.py": "8f89995686154e314d010d4ad91f426033cc359cd68383e75aad562ed8e19692",
+    "online_graph_r2_http_client.py": "e96d89e4e5bd42889d6635bfddaf08b128085ffdbf614d10ed4fc6a9a28af7aa",
     "online_graph_r2_http_provider.py": "8c6e4c21c6f5dba756db1d84c6ad7ff777c84551760621c8d1ceb7b514122170",
     "online_graph_r2_identity_retry.py": "ea56a85f122459e46d789191b38692e01df53dd88b5dc508e477966bdf351611",
     "online_graph_r2_provider.py": "41fc57da147ac9df7bddd7e04145ead6f78ac7e47ebc7900ac21198cc8f4b929",
@@ -39,8 +39,8 @@
     "online_graph_r2_retry_provider.py": "bc8f48785fbfd223d386edd5e510ed2bea720b12c28dc957c37b35bf30ff1853",
     "online_graph_r2_runtime.py": "c232954fe5d983ae360431f66e7f2cfee776412a515cd535ae2b8b9c6b6d5b1c",
     "online_graph_r2_search.py": "7db22e08ea0a3bc89833c4da9a3f0106d6ab7db1436d1da31e4ebcf53d9af36f",
-    "online_graph_service_v2_r2.example.json": "3a47fa7f58ac340ab902cdf6148e0f993fb611a398b33605d5c4ee221bd93987",
-    "README.md": "cad3975b3e81be57e40c371a13c465d2e213ef6c21cb0587d719d46af7b8c492",
+    "online_graph_service_v2_r2.example.json": "bff48a156b4de535311ca4cd9a05960a87db5a3324c4b7595420c51ff099cb3f",
+    "README.md": "5f0815ab31bc98bf8f4dfff526bc69a03b53d987bebc4dba11ad6bda02dd35c2",
     "requirements-r2.txt": "35c1e92330708cc5289f8e77eab89af1fd392fae3896fd9250531939a06b92ce",
     "reranker.py": "1bd5ea0c3539b2c53d6347bdb5e94f789a6d6b2a6b46a5c699c5d9468126f052",
     "resolved_graph_ingest_v28.py": "2d3a459a4beee3864ba66a489141c59ee0d447eb662a705d2a5a50812a573f7d",
@@ -49,14 +49,14 @@
     "scripts/bootstrap_tokenizer.py": "a3dad77e9fc134103d537417227a379fd5ff43050b87e549736e391af586f401",
     "serve_online_graph_v2_r2.py": "e95708921d7926adcd86103a456a0f6ff783910c138f44e25f1b830fab299d5c",
     "THIRD_PARTY_NOTICES.md": "8f6ef51205593b89124350c1f288b8153f38f59c2bf11477aefa467605126016",
-    "verify_release.py": "bddc4aee110bd91ddc1ab73c7dee41a3f0919cb16b38e6fa9794841f3e5dc308"
+    "verify_release.py": "926cfa41564918bac7b650b5626aece85d285f2e91defc69e3ddcfc07deb4822"
   },
-  "graph_exhaustion_policy": "message-text-only-with-explicit-partial-receipt",
-  "cumulative_cost_and_request_limits": null,
+  "graph_terminal_rejection_policy": "immediate text-only degradation; no retry or content rewriting",
   "free_regressions": 67,
   "concurrency_recovery_tests": 27,
   "indexed_citation_tests": 21,
   "category_and_budget_tests": 9,
   "degradation_tests": 13,
+  "terminal_rejection_tests": 9,
   "validation_scope": "Mocked HTTP Add/model concurrency, durable recovery and original validation regressions; not a live provider load test"
 }

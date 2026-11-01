@@ -67,7 +67,7 @@
       "user_agent": "MemoryR2/1.0"
     }
   },
-  "revision": "r2-graph-degrade-20261030",
+  "revision": "r2-terminal-fallback-20261101",
   "request_seconds": 1740,
   "user_policy": {
     "mode": "dynamic",
